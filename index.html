@@ -1163,13 +1163,16 @@
 
       function chordTones(root, quality) {
         const rootIdx = noteIndex(root);
+        const q = (quality || "").toLowerCase();
         let intervals = [0, 4, 7];
-        if (quality.includes("dim") || quality.includes("o")) intervals = [0, 3, 6];
-        else if (quality.includes("maj7")) intervals = [0, 4, 7, 11];
-        else if (quality.includes("m7b5")) intervals = [0, 3, 6, 10];
-        else if (quality.includes("m7") || (quality.includes("m") && quality.includes("7"))) intervals = [0, 3, 7, 10];
-        else if (quality.includes("7")) intervals = [0, 4, 7, 10];
-        else if (quality.includes("m")) intervals = [0, 3, 7];
+        if (q.includes("dim") || q.includes("o")) intervals = [0, 3, 6];
+        else if (q.includes("maj")) intervals = q.includes("7") ? [0, 4, 7, 11] : [0, 4, 7];
+        else if (q.includes("m7b5")) intervals = [0, 3, 6, 10];
+        else if (q.includes("m7") || (q.includes("m") && q.includes("7"))) intervals = [0, 3, 7, 10];
+        else if (q.includes("sus4")) intervals = [0, 5, 7];
+        else if (q.includes("sus2")) intervals = [0, 2, 7];
+        else if (q.includes("7")) intervals = [0, 4, 7, 10];
+        else if (q.includes("m")) intervals = [0, 3, 7];
         return intervals.map(function (interval) {
           return CHROMATIC[(rootIdx + interval) % 12];
         });
