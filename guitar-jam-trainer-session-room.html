@@ -1,0 +1,2797 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guitar Jam Trainer - Session Room</title>
+  <style>
+    :root {
+      --bg: #090d14;
+      --panel: rgba(18, 24, 35, 0.92);
+      --panel-2: rgba(13, 18, 27, 0.92);
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #e8eef8;
+      --muted: #93a0b7;
+      --accent: #77e6c4;
+      --accent-2: #f6c96b;
+      --warn: #ff8a85;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      --radius: 20px;
+      --role-bass: #79c8ff;
+      --role-drums: #ff9f7a;
+      --role-backing: #b78cff;
+      --role-guitar: #7df0c9;
+      --role-ai: #f0c76e;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(119, 230, 196, 0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(246, 201, 107, 0.14), transparent 22%),
+        linear-gradient(180deg, #090d14 0%, #070a10 100%);
+    }
+
+    .shell {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(28px, 4.5vw, 56px);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    .hero p {
+      margin: 10px 0 0;
+      max-width: 920px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(119, 230, 196, 0.12);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 16px 18px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #d9e3f4;
+    }
+
+    .panel-body { padding: 18px; }
+
+    .stats {
+      display: none;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--line);
+    }
+
+    .stat label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 10px;
+    }
+
+    .stat .value {
+      font-size: clamp(24px, 3.8vw, 34px);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+    }
+
+    .progress {
+      margin-top: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .progress > div {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.25s ease;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    select, textarea, button, input[type="range"] {
+      font: inherit;
+    }
+
+    select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(10, 14, 20, 0.92);
+      color: var(--text);
+      outline: none;
+      padding: 12px 14px;
+    }
+
+    textarea {
+      min-height: 76px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .inline {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle input { accent-color: var(--accent); }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #071018;
+      background: linear-gradient(135deg, var(--accent), #9ff8e1);
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--line);
+    }
+
+    .btn.danger {
+      color: #250708;
+      background: linear-gradient(135deg, #ff8b88, #ffb98f);
+    }
+
+    .board {
+      display: grid;
+      gap: 16px;
+    }
+
+    .transport {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .chord-display {
+      padding: 18px;
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+        linear-gradient(135deg, rgba(119,230,196,0.06), rgba(246,201,107,0.04));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .chord-display .label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 10px;
+    }
+
+    .chord-display .chord {
+      font-size: clamp(48px, 8vw, 92px);
+      font-weight: 900;
+      letter-spacing: -0.08em;
+      line-height: 0.92;
+    }
+
+    .chord-display .sub {
+      margin-top: 8px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .turn-card {
+      padding: 18px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--line);
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .turn-card .big {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .turn-line {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      color: #dce7f8;
+      font-size: 13px;
+    }
+
+    .chip.active {
+      background: rgba(119, 230, 196, 0.16);
+      border-color: rgba(119, 230, 196, 0.35);
+      color: #effff8;
+    }
+
+    .seat-interface {
+      display: grid;
+      gap: 14px;
+    }
+
+    .seat-shell {
+      padding: 16px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      display: grid;
+      gap: 12px;
+    }
+
+    .seat-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .seat-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .seat-help {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .seat-kbd-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .seat-key {
+      padding: 14px 10px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      display: grid;
+      gap: 6px;
+      min-height: 92px;
+      align-content: center;
+    }
+
+    .seat-key .key {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -0.05em;
+    }
+
+    .seat-key .desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .seat-key.active {
+      background: rgba(119,230,196,0.14);
+      border-color: rgba(119,230,196,0.35);
+    }
+
+    .bass-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .bass-note {
+      padding: 16px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .bass-note strong {
+      display: block;
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .backing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .backing-card {
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .backing-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .backing-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .fretboard-wrap {
+      padding: 12px;
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 22%),
+        linear-gradient(135deg, #6c4325 0%, #4a2c18 48%, #2d170c 100%);
+      border: 1px solid rgba(255, 236, 210, 0.18);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        inset 0 -24px 36px rgba(0,0,0,0.24),
+        0 18px 50px rgba(0,0,0,0.22);
+    }
+
+    .fretboard {
+      display: grid;
+      grid-template-columns: clamp(34px, 3.5vw, 56px) repeat(23, minmax(0, 1fr));
+      grid-template-rows: clamp(22px, 2.2vw, 32px) repeat(6, minmax(0, 1fr));
+      width: 100%;
+      min-width: 0;
+      height: min(54vh, 620px);
+      overflow: hidden;
+      border-radius: 14px;
+      position: relative;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0) 15%),
+        linear-gradient(180deg, rgba(0,0,0,0.22), transparent 14%, rgba(0,0,0,0.08) 75%, rgba(0,0,0,0.24)),
+        linear-gradient(135deg, #5d3820 0%, #4a2b15 44%, #2c170c 100%);
+    }
+
+    .fretboard::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 22px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 96px);
+      opacity: 0.24;
+      mix-blend-mode: soft-light;
+    }
+
+    .fretboard .head-cell,
+    .fretboard .string-label,
+    .fretboard .cell {
+      border-right: 1px solid rgba(255, 247, 235, 0.1);
+      border-bottom: 1px solid rgba(255, 247, 235, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      position: relative;
+    }
+
+    .fretboard .head-cell {
+      background: linear-gradient(180deg, rgba(22, 13, 8, 0.8), rgba(60, 36, 18, 0.8));
+      color: rgba(244,230,209,0.76);
+      font-size: 10px;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.55);
+    }
+
+    .fretboard .string-label {
+      background: linear-gradient(180deg, rgba(20, 12, 8, 0.8), rgba(64, 40, 20, 0.8));
+      color: #f4e4c8;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      font-size: 12px;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.55);
+    }
+
+    .fretboard .cell {
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease, transform 0.15s ease;
+      background: transparent;
+    }
+
+    .fretboard .cell:hover { background: rgba(255,255,255,0.05); }
+    .fretboard .cell.active-hit { background: rgba(255, 245, 214, 0.16); }
+
+    .dot {
+      width: clamp(16px, 1.75vw, 26px);
+      height: clamp(16px, 1.75vw, 26px);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 9px;
+      color: #071018;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .dot.root { background: #ff7c7a; }
+    .dot.chord { background: #77e6c4; }
+    .dot.scale { background: #f6c96b; }
+    .dot.avoid { background: #ff9b66; }
+    .dot.approach { background: #b78cff; color: #f7f2ff; }
+    .dot.muted {
+      background: transparent;
+      color: rgba(232,238,248,0.36);
+      border: 1px dashed rgba(255,255,255,0.1);
+      box-shadow: none;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .swatch.root { background: #ff7c7a; }
+    .swatch.chord { background: #77e6c4; }
+    .swatch.scale { background: #f6c96b; }
+    .swatch.avoid { background: #ff9b66; }
+    .swatch.approach { background: #b78cff; }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .role {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      display: grid;
+      gap: 10px;
+      min-height: 176px;
+    }
+
+    .role.selected {
+      outline: 2px solid rgba(119,230,196,0.35);
+      box-shadow: 0 0 0 1px rgba(119,230,196,0.15) inset;
+    }
+
+    .role.active-human {
+      border-color: rgba(119,230,196,0.35);
+      background: linear-gradient(180deg, rgba(119,230,196,0.14), rgba(255,255,255,0.03));
+    }
+
+    .role.active-ai {
+      border-color: rgba(246,201,107,0.34);
+      background: linear-gradient(180deg, rgba(246,201,107,0.12), rgba(255,255,255,0.03));
+    }
+
+    .role-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .role-name {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .role-badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .role.active-human .role-badge {
+      background: rgba(119,230,196,0.16);
+      border-color: rgba(119,230,196,0.32);
+    }
+
+    .role.active-ai .role-badge {
+      background: rgba(246,201,107,0.16);
+      border-color: rgba(246,201,107,0.32);
+    }
+
+    .role-desc {
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .role-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .role-volume {
+      display: grid;
+      gap: 6px;
+    }
+
+    .role-volume .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .role-volume input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      height: 34px;
+      margin: 0;
+      cursor: pointer;
+      touch-action: pan-y;
+    }
+
+    .role-volume input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .role-volume input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #9ff8e1);
+      border: 2px solid rgba(7,16,24,0.85);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+      margin-top: -7px;
+    }
+
+    .role-volume input[type="range"]::-moz-range-track {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .role-volume input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #9ff8e1);
+      border: 2px solid rgba(7,16,24,0.85);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+    }
+
+    .display-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .layer-toggle {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .layer-toggle.active {
+      background: rgba(119,230,196,0.16);
+      border-color: rgba(119,230,196,0.35);
+      color: #f0fff9;
+    }
+
+    .tiny {
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--line);
+    }
+
+    .tiny.primary {
+      color: #071018;
+      background: linear-gradient(135deg, var(--accent), #9ff8e1);
+    }
+
+    .tiny.warn {
+      color: #220705;
+      background: linear-gradient(135deg, #ff8b88, #ffb98f);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mini {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .mini label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 8px;
+    }
+
+    .mini .big {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .mini .small {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1240px) {
+      .grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .transport { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .shell { padding: 12px; }
+      .stats { grid-template-columns: 1fr; }
+      .inline { grid-template-columns: 1fr; }
+      .role-grid { grid-template-columns: 1fr; }
+      .seat-kbd-grid, .bass-strip, .backing-grid { grid-template-columns: 1fr 1fr; }
+      .fretboard { height: min(46vh, 500px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="hero">
+      <div>
+        <h1>Guitar Jam Trainer<br/>Session Room</h1>
+        <p>
+          A four-part jam room for bass, drums, backing, and guitar. Any empty seat is filled by the machine,
+          so the session keeps breathing even when only one or two players are present.
+        </p>
+      </div>
+      <div class="status-chip">
+        <span class="status-dot"></span>
+        <span id="statusText">Ready to jam</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="stack">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Room Control</h2>
+            <div style="color: var(--muted); font-size: 13px;">AI fills empty seats</div>
+          </div>
+          <div class="panel-body">
+            <div class="stats">
+              <div class="stat">
+                <label>Today</label>
+                <div class="value" id="todayTime">00:00:00</div>
+              </div>
+              <div class="stat">
+                <label>Total</label>
+                <div class="value" id="totalTime">00:00:00</div>
+              </div>
+              <div class="stat">
+                <label>100 hour target</label>
+                <div class="value" id="hoursText">0h</div>
+                <div class="progress"><div id="progressBar"></div></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="presetSelect">Progression preset</label>
+              <select id="presetSelect"></select>
+            </div>
+
+            <div class="field">
+              <label for="progressionInput">Custom progression</label>
+              <textarea id="progressionInput">| Em9 | A13 | Dmaj9 | Dmaj9 |</textarea>
+            </div>
+
+            <div class="inline">
+              <div class="field">
+                <label for="keySelect">Key</label>
+                <select id="keySelect"></select>
+              </div>
+              <div class="field">
+                <label for="tempoSelect">Tempo</label>
+                <select id="tempoSelect">
+                  <option value="72">72 BPM</option>
+                  <option value="88">88 BPM</option>
+                  <option value="100">100 BPM</option>
+                  <option value="116" selected>116 BPM</option>
+                  <option value="128">128 BPM</option>
+                  <option value="144">144 BPM</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="inline">
+              <div class="field">
+                <label for="roleCountSelect">Human players</label>
+                <select id="roleCountSelect">
+                  <option value="1">1 player</option>
+                  <option value="2">2 players</option>
+                  <option value="3">3 players</option>
+                  <option value="4">4 players</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Audio</label>
+                <div style="padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(10,14,20,0.92); color: var(--muted);">Chiptune only</div>
+              </div>
+            </div>
+
+            <div class="toggle-row">
+              <label class="toggle"><input id="loopToggle" type="checkbox" checked /> Loop</label>
+            </div>
+
+            <div class="actions">
+              <button class="btn" id="startBtn">Start</button>
+              <button class="btn secondary" id="pauseBtn">Pause</button>
+              <button class="btn secondary" id="stopBtn">Stop</button>
+              <button class="btn danger" id="resetBtn">Reset</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Session Roles</h2>
+            <div style="color: var(--muted); font-size: 13px;">Human seats and AI fillers</div>
+          </div>
+          <div class="panel-body">
+            <div class="role-grid" id="roleGrid"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Now Playing</h2>
+            <div id="beatText" style="color: var(--muted); font-size: 13px;">Bar 1 / 4</div>
+          </div>
+          <div class="panel-body board">
+            <div class="transport">
+              <div class="chord-display">
+                <div class="label">Current chord</div>
+                <div class="chord" id="currentChord">Em9</div>
+                <div class="sub" id="nextChord">Next: A13</div>
+              </div>
+
+              <div class="turn-card">
+              <div class="big" id="seatSummary">1 human / 3 AI</div>
+              <div class="turn-line" id="turnLine">Guitar seat is yours. Empty bass, drums, and backing seats are filled automatically.</div>
+              <div class="small" id="patternLine">AI patterns: steady_4 / root_hold / pad_long</div>
+              <div class="chips" id="barChips"></div>
+            </div>
+          </div>
+
+            <div class="seat-interface" id="seatInterface"></div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = "gjt_session_room_v2";
+      const CHROMATIC = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+      const FLATS = { Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#" };
+      const GUITAR_STRINGS = [64, 59, 55, 50, 45, 40];
+      const BASS_STRINGS = [43, 38, 33, 28];
+      const ROLE_ORDER = ["guitar", "bass", "drums", "backing"];
+      const ROLE_META = {
+        bass: {
+          name: "Bass",
+          color: "var(--role-bass)",
+          description: "Low-end root motion and glue.",
+          style: "root motion"
+        },
+        drums: {
+          name: "Drums",
+          color: "var(--role-drums)",
+          description: "Pulse, backbeat, and simple fills.",
+          style: "beat grid"
+        },
+        backing: {
+          name: "Backing",
+          color: "var(--role-backing)",
+          description: "Pads, stabs, and colors.",
+          style: "comping"
+        },
+        guitar: {
+          name: "Guitar",
+          color: "var(--role-guitar)",
+          description: "Lead voice and melodic answers.",
+          style: "phrases"
+        }
+      };
+
+      const PRESETS = [
+        { id: "warm-pat", name: "Warm Pat-style", chords: "| Em9 | A13 | Dmaj9 | Dmaj9 |", key: "D" },
+        { id: "ii-v-i-major", name: "ii-V-I major", chords: "| Dm7 | G7 | Cmaj7 | Cmaj7 |", key: "C" },
+        { id: "ii-v-i-minor", name: "ii-V-i minor", chords: "| Dm7b5 | G7 | Cm7 | Cm7 |", key: "C" },
+        { id: "pop-loop", name: "Pop loop", chords: "| Am | F | C | G |", key: "C" },
+        { id: "rock-ballad", name: "Rock ballad", chords: "| C | G | Am | F |", key: "C" },
+        { id: "slow-blues", name: "Slow blues", chords: "| C7 | F7 | C7 | G7 |", key: "C" },
+        { id: "modal-vamp", name: "Modal vamp", chords: "| Am7 | Dm7 | Am7 | Dm7 |", key: "A" },
+        { id: "game-theme", name: "Game theme flow", chords: "| Em | C | G | D |", key: "G" },
+        { id: "soul-jam", name: "Soul jam", chords: "| Fmaj7 | Em7 | Dm7 | Cmaj7 |", key: "F" },
+        { id: "all-the-things-you-are", name: "All The Things You Are", chords: "| Fm7 | Bb7 | Ebmaj7 | Abmaj7 | Dm7b5 | G7 | Cm7 | Cm7 |", key: "Ab" },
+        { id: "all-the-things-you-are-full", name: "All The Things You Are (full)", chords: "| Fm7 | Bbm7 | Eb7 | Abmaj7 | Dbmaj7 | Dm7b5 | G7 | Cmaj7 | Cm7 | Fm7 | Bb7 | Ebmaj7 | Abmaj7 | Am7 | D7 | Gmaj7 | Am7 | D7 | Gmaj7 | Gmaj7 | F#m7b5 | B7 | Emaj7 | Emaj7 | Fm7 | Bbm7 | Eb7 | Abmaj7 | Dbmaj7 | Dbm7 | Gb7 | Bmaj7 | Bbm7 | Eb7 | Abmaj7 | Fm7 |", key: "Ab" },
+        { id: "chromatic-lift", name: "Chromatic lift", chords: "| Cmaj7 | C#dim7 | Dm7 | G7 |", key: "C" }
+      ];
+
+      const state = loadState();
+      let audioContext = null;
+      let sessionStart = null;
+      let playbackTimer = null;
+      let metricsTimer = null;
+      let lastBeatIndex = -1;
+      let lastSeatRenderKey = "";
+      let activeBackingHolds = new Set();
+      let activeFretboardVoices = new Set();
+      let aiPatternState = {
+        drums: { barIndex: -1, current: null, history: [] },
+        bass: { barIndex: -1, current: null, history: [] },
+        backing: { barIndex: -1, current: null, history: [] }
+      };
+
+      const el = {
+        statusText: document.getElementById("statusText"),
+        todayTime: document.getElementById("todayTime"),
+        totalTime: document.getElementById("totalTime"),
+        hoursText: document.getElementById("hoursText"),
+        progressBar: document.getElementById("progressBar"),
+        presetSelect: document.getElementById("presetSelect"),
+        progressionInput: document.getElementById("progressionInput"),
+        keySelect: document.getElementById("keySelect"),
+        tempoSelect: document.getElementById("tempoSelect"),
+        roleCountSelect: document.getElementById("roleCountSelect"),
+        loopToggle: document.getElementById("loopToggle"),
+        startBtn: document.getElementById("startBtn"),
+        pauseBtn: document.getElementById("pauseBtn"),
+        stopBtn: document.getElementById("stopBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        roleGrid: document.getElementById("roleGrid"),
+        currentChord: document.getElementById("currentChord"),
+        nextChord: document.getElementById("nextChord"),
+        beatText: document.getElementById("beatText"),
+        seatSummary: document.getElementById("seatSummary"),
+        turnLine: document.getElementById("turnLine"),
+        patternLine: document.getElementById("patternLine"),
+        barChips: document.getElementById("barChips"),
+        seatInterface: document.getElementById("seatInterface"),
+        fretboard: null
+      };
+
+      function loadState() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const base = {
+          tempo: 116,
+          key: "D",
+          progressionSourceKey: "D",
+          progressionId: "warm-pat",
+          progressionText: "| Em9 | A13 | Dmaj9 | Dmaj9 |",
+          loop: true,
+          roleCount: 1,
+          selectedRole: "guitar",
+          elapsedMs: 0,
+          todaySeconds: 0,
+          totalSeconds: 0,
+          isRunning: false,
+          isPaused: false,
+          roleAssignments: {
+            guitar: "human",
+            bass: "ai",
+            drums: "ai",
+            backing: "ai"
+          },
+          volumes: {
+            guitar: 0.9,
+            bass: 0.85,
+            drums: 0.75,
+            backing: 0.8
+          },
+          displayLayers: {
+            root: true,
+            chord: true,
+            scale: true,
+            avoid: true,
+            approach: true
+          }
+        };
+        if (!raw) return base;
+        try {
+          const parsed = JSON.parse(raw);
+          return {
+            ...base,
+            ...parsed,
+            roleAssignments: {
+              ...base.roleAssignments,
+              ...(parsed.roleAssignments || {})
+            },
+            volumes: {
+              ...base.volumes,
+              ...(parsed.volumes || {})
+            },
+            displayLayers: {
+              ...base.displayLayers,
+              ...(parsed.displayLayers || {})
+            }
+          };
+        } catch {
+          return base;
+        }
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          ...state,
+          savedAt: new Date().toISOString()
+        }));
+      }
+
+      function normalizeNote(note) {
+        return FLATS[note] || note;
+      }
+
+      function noteIndex(note) {
+        return CHROMATIC.indexOf(normalizeNote(note));
+      }
+
+      function transposeNote(note, semitones) {
+        const idx = noteIndex(note);
+        return CHROMATIC[(idx + semitones + 12) % 12];
+      }
+
+      function noteToMidi(note, octave) {
+        return 12 * (octave + 1) + noteIndex(note);
+      }
+
+      function parseChord(token) {
+        const clean = token.trim();
+        if (!clean) return null;
+        const match = clean.match(/^([A-Ga-g])([#b]?)(.*)$/);
+        if (!match) return null;
+        const root = normalizeNote(match[1].toUpperCase() + (match[2] || ""));
+        const quality = (match[3] || "").trim();
+        return { root: root, quality: quality ? quality.toLowerCase() : "maj" };
+      }
+
+      function parseProgression(text) {
+        return text
+          .split("|")
+          .map(function (part) { return part.trim(); })
+          .filter(Boolean)
+          .map(parseChord)
+          .filter(Boolean);
+      }
+
+      function chordLabel(chord) {
+        return chord.root + (chord.quality === "maj" ? "" : chord.quality);
+      }
+
+      function chordTones(root, quality) {
+        const rootIdx = noteIndex(root);
+        let intervals = [0, 4, 7];
+        if (quality.includes("dim") || quality.includes("o")) intervals = [0, 3, 6];
+        else if (quality.includes("maj7")) intervals = [0, 4, 7, 11];
+        else if (quality.includes("m7b5")) intervals = [0, 3, 6, 10];
+        else if (quality.includes("m7") || (quality.includes("m") && quality.includes("7"))) intervals = [0, 3, 7, 10];
+        else if (quality.includes("7")) intervals = [0, 4, 7, 10];
+        else if (quality.includes("m")) intervals = [0, 3, 7];
+        return intervals.map(function (interval) {
+          return CHROMATIC[(rootIdx + interval) % 12];
+        });
+      }
+
+      function scaleTones(root, quality, mode) {
+        const rootIdx = noteIndex(root);
+        const isMinor = quality.includes("m") && !quality.includes("maj");
+        let intervals;
+        if (mode === "pentatonic") {
+          intervals = isMinor ? [0, 3, 5, 7, 10] : [0, 2, 4, 7, 9];
+        } else if (mode === "approach") {
+          intervals = isMinor ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];
+        } else {
+          intervals = isMinor ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];
+        }
+        return intervals.map(function (interval) {
+          return CHROMATIC[(rootIdx + interval) % 12];
+        });
+      }
+
+      function approachTones(tones) {
+        const set = {};
+        tones.forEach(function (tone) {
+          const idx = noteIndex(tone);
+          [-1, 1].forEach(function (step) {
+            set[CHROMATIC[(idx + step + 12) % 12]] = true;
+          });
+        });
+        return Object.keys(set);
+      }
+
+      function avoidTones(chord) {
+        const quality = (chord && chord.quality) ? chord.quality : "";
+        const isMinor = quality.includes("m") && !quality.includes("maj");
+        if (isMinor || !chord || !chord.root) return [];
+        return [transposeNote(chord.root, 5)];
+      }
+
+      function ensureAudio() {
+        if (!audioContext) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return null;
+          audioContext = new AudioCtx();
+        }
+        if (audioContext.state === "suspended") {
+          audioContext.resume();
+        }
+        return audioContext;
+      }
+
+      function envGain(ctx, start, peak, end, attack, decay, release) {
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), start + attack);
+        gain.gain.exponentialRampToValueAtTime(Math.max(decay, 0.0002), start + attack + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, end - release);
+        return gain;
+      }
+
+      function playToneAt(midi, options, startTime) {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        if (ctx.state === "suspended" && !(options && options._retry)) {
+          ctx.resume().then(function () {
+            playToneAt(midi, { ...(options || {}), _retry: true }, startTime);
+          });
+          return;
+        }
+        const now = typeof startTime === "number" ? startTime : ctx.currentTime;
+        const duration = options.duration || 0.44;
+        const sustain = options.sustain != null ? options.sustain : 0.18;
+        const release = options.release != null ? options.release : 0.16;
+        const volume = options.volume != null ? options.volume : 1;
+        const decayPoint = now + Math.max(0.04, duration * 0.45);
+        const releasePoint = now + Math.max(duration - release, decayPoint + 0.04);
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+        const master = ctx.createGain();
+
+        osc.type = options.wave || "square";
+        osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+        if (options.detune) osc.detune.value = options.detune;
+
+        filter.type = options.filterType || "lowpass";
+        filter.frequency.value = options.cutoff || 2400;
+        filter.Q.value = options.q || 0.9;
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(options.gain || 0.24, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(Math.max(sustain, 0.0002), decayPoint);
+        gain.gain.exponentialRampToValueAtTime(0.0001, releasePoint);
+        master.gain.setValueAtTime(Math.max(0, volume), now);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        master.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration + release + 0.05);
+      }
+
+      function playTone(midi, options) {
+        playToneAt(midi, options);
+      }
+
+      function playChord(notes, options, startTime) {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        if (ctx.state === "suspended" && !(options && options._retry)) {
+          ctx.resume().then(function () {
+            playChord(notes, { ...(options || {}), _retry: true }, startTime);
+          });
+          return;
+        }
+        const now = typeof startTime === "number" ? startTime : ctx.currentTime;
+        const master = ctx.createGain();
+        master.gain.value = options && options.volume != null ? options.volume : 1;
+        master.connect(ctx.destination);
+        const duration = options && options.duration ? options.duration : 0.52;
+        const sustain = options && options.sustain != null ? options.sustain : 0.14;
+        const release = options && options.release != null ? options.release : 0.22;
+        const decayPoint = now + Math.max(0.08, duration * 0.5);
+        const releasePoint = now + Math.max(duration - release, decayPoint + 0.08);
+
+        notes.forEach(function (midi, index) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
+          osc.type = index === 0 ? "triangle" : "square";
+          osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+          filter.type = "lowpass";
+          filter.frequency.value = options && options.cutoff ? options.cutoff : 2200;
+          filter.Q.value = 0.8;
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(0.35, now + 0.008);
+          gain.gain.exponentialRampToValueAtTime(Math.max(sustain, 0.0002), decayPoint);
+          gain.gain.exponentialRampToValueAtTime(0.0001, releasePoint);
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(master);
+          osc.start(now);
+          osc.stop(now + duration + release + 0.05);
+        });
+      }
+
+      function playNoise(kind, duration, band, gainLevel, volume) {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        if (ctx.state === "suspended") {
+          ctx.resume().then(function () {
+            playNoise(kind, duration, band, gainLevel, volume);
+          });
+          return;
+        }
+        const now = ctx.currentTime;
+        const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * duration), ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+        }
+        const source = ctx.createBufferSource();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+        const master = ctx.createGain();
+        source.buffer = buffer;
+        filter.type = kind;
+        filter.frequency.value = band;
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(gainLevel * 1.35, now + 0.003);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        master.gain.setValueAtTime(Math.max(0, volume || 1), now);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        master.connect(ctx.destination);
+        source.start(now);
+        source.stop(now + duration + 0.03);
+      }
+
+      function playKick(gainLevel, volume) {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        const master = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.08);
+        filter.type = "lowpass";
+        filter.frequency.value = 500;
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(gainLevel != null ? gainLevel : 1.1, now + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+        master.gain.setValueAtTime(Math.max(0, volume || 1), now);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        master.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      }
+
+      function playSnare(gainLevel, volume) { playNoise("bandpass", 0.12, 1800, gainLevel != null ? gainLevel : 0.55, volume); }
+      function playHat(gainLevel, volume) { playNoise("highpass", 0.05, 6500, gainLevel != null ? gainLevel : 0.18, volume); }
+      function playClap(gainLevel, volume) { playNoise("bandpass", 0.08, 2800, gainLevel != null ? gainLevel : 0.28, volume); }
+
+      function roleVolume(role) {
+        const value = state.volumes && Number(state.volumes[role]);
+        if (Number.isFinite(value)) return Math.max(0, Math.min(1.25, value));
+        return 1;
+      }
+
+      function setRoleVolume(role, value) {
+        if (!state.volumes) state.volumes = {};
+        state.volumes[role] = Math.max(0, Math.min(1.25, Number(value)));
+        saveState();
+      }
+
+      function startHeldVoice(midi, options) {
+        const ctx = ensureAudio();
+        if (!ctx) return null;
+        const now = ctx.currentTime;
+        const gain = ctx.createGain();
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const voiceLevel = Math.max(0.0002, (options && options.gain) || 0.2);
+
+        osc.type = (options && options.wave) || "square";
+        osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+        filter.type = (options && options.filterType) || "lowpass";
+        filter.frequency.value = (options && options.cutoff) || 2400;
+        filter.Q.value = (options && options.q) || 0.9;
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(voiceLevel, now + 0.01);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+
+        let stopped = false;
+        return {
+          stop: function () {
+            if (stopped) return;
+            stopped = true;
+            const stopAt = ctx.currentTime;
+            try {
+              gain.gain.cancelScheduledValues(stopAt);
+              gain.gain.setValueAtTime(Math.max(gain.gain.value || 0.0001, 0.0001), stopAt);
+              gain.gain.exponentialRampToValueAtTime(0.0001, stopAt + 0.09);
+            } catch {}
+            osc.stop(stopAt + 0.14);
+          }
+        };
+      }
+
+      function stopHeldVoice(cell) {
+        if (cell && cell._heldVoice) {
+          activeFretboardVoices.delete(cell._heldVoice);
+          cell._heldVoice.stop();
+          cell._heldVoice = null;
+        }
+      }
+
+      function stopActiveFretboardVoices() {
+        activeFretboardVoices.forEach(function (voice) {
+          if (voice && typeof voice.stop === "function") voice.stop();
+        });
+        activeFretboardVoices.clear();
+      }
+
+      function stopHeldVoices(voices) {
+        if (!Array.isArray(voices)) return;
+        voices.forEach(function (voice) {
+          if (voice && typeof voice.stop === "function") voice.stop();
+        });
+      }
+
+      function stopActiveBackingHold() {
+        activeBackingHolds.forEach(function (hold) {
+          if (hold && typeof hold.stop === "function") hold.stop();
+        });
+        activeBackingHolds.clear();
+      }
+
+      function layerEnabled(layer) {
+        return !state.displayLayers || state.displayLayers[layer] !== false;
+      }
+
+      function toggleLayer(layer) {
+        if (!state.displayLayers) state.displayLayers = { root: true, chord: true, scale: true, avoid: true, approach: true };
+        state.displayLayers[layer] = !layerEnabled(layer);
+        lastSeatRenderKey = "";
+        saveState();
+        renderSession();
+      }
+
+      const AI_PATTERN_LIBRARY = {
+        drums: [
+          {
+            id: "steady_4",
+            label: "Steady 4",
+            tags: ["stable", "simple", "supportive"],
+            energy: 0.25,
+            density: 0.35,
+            events: [
+              { beat: 0, hit: "kick", gain: 1.0 },
+              { beat: 0, hit: "hat", gain: 0.9 },
+              { beat: 1, hit: "hat", gain: 0.8 },
+              { beat: 2, hit: "snare", gain: 1.0 },
+              { beat: 2, hit: "hat", gain: 0.85 },
+              { beat: 3, hit: "hat", gain: 0.8 }
+            ]
+          },
+          {
+            id: "backbeat_light",
+            label: "Backbeat Light",
+            tags: ["stable", "groove", "supportive"],
+            energy: 0.35,
+            density: 0.42,
+            events: [
+              { beat: 0, hit: "kick", gain: 1.0 },
+              { beat: 1, hit: "hat", gain: 0.75 },
+              { beat: 2, hit: "kick", gain: 0.75 },
+              { beat: 2, hit: "snare", gain: 1.0 },
+              { beat: 3, hit: "hat", gain: 0.85 }
+            ]
+          },
+          {
+            id: "open_hat_drive",
+            label: "Open Hat Drive",
+            tags: ["drive", "energy", "motion"],
+            energy: 0.6,
+            density: 0.55,
+            events: [
+              { beat: 0, hit: "kick", gain: 1.0 },
+              { beat: 0, hit: "hat", gain: 1.0 },
+              { beat: 1, hit: "hat", gain: 0.9 },
+              { beat: 2, hit: "snare", gain: 1.0 },
+              { beat: 2, hit: "hat", gain: 1.05 },
+              { beat: 3, hit: "kick", gain: 0.75 },
+              { beat: 3, hit: "hat", gain: 0.95 }
+            ]
+          },
+          {
+            id: "sync_push",
+            label: "Sync Push",
+            tags: ["sync", "push", "motion"],
+            energy: 0.55,
+            density: 0.48,
+            events: [
+              { beat: 0, hit: "kick", gain: 1.0 },
+              { beat: 1, hit: "kick", gain: 0.55 },
+              { beat: 1, hit: "hat", gain: 0.8 },
+              { beat: 2, hit: "snare", gain: 1.0 },
+              { beat: 3, hit: "kick", gain: 0.8 },
+              { beat: 3, hit: "hat", gain: 0.85 }
+            ]
+          },
+          {
+            id: "fill_simple",
+            label: "Simple Fill",
+            tags: ["fill", "transition", "energy"],
+            energy: 0.65,
+            density: 0.6,
+            events: [
+              { beat: 0, hit: "kick", gain: 1.0 },
+              { beat: 1, hit: "hat", gain: 0.75 },
+              { beat: 2, hit: "snare", gain: 0.95 },
+              { beat: 3, hit: "snare", gain: 0.8 },
+              { beat: 3, hit: "clap", gain: 0.7 }
+            ]
+          }
+        ],
+        bass: [
+          {
+            id: "root_hold",
+            label: "Root Hold",
+            tags: ["stable", "simple", "space"],
+            energy: 0.2,
+            density: 0.2,
+            events: [
+              { beat: 0, note: "root", duration: 1.0, sustain: 0.38, gain: 0.2, cutoff: 820 },
+              { beat: 2, note: "root", duration: 1.0, sustain: 0.34, gain: 0.18, cutoff: 840 }
+            ]
+          },
+          {
+            id: "root_fifth",
+            label: "Root Fifth",
+            tags: ["stable", "groove", "supportive"],
+            energy: 0.3,
+            density: 0.35,
+            events: [
+              { beat: 0, note: "root", duration: 0.5, sustain: 0.26, gain: 0.19, cutoff: 860 },
+              { beat: 1, note: "fifth", duration: 0.28, sustain: 0.2, gain: 0.16, cutoff: 900 },
+              { beat: 2, note: "root", duration: 0.42, sustain: 0.24, gain: 0.18, cutoff: 860 },
+              { beat: 3, note: "fifth", duration: 0.24, sustain: 0.18, gain: 0.15, cutoff: 920 }
+            ]
+          },
+          {
+            id: "walking_simple",
+            label: "Walking Simple",
+            tags: ["motion", "jazzy", "leading"],
+            energy: 0.55,
+            density: 0.65,
+            events: [
+              { beat: 0, note: "root", duration: 0.34, sustain: 0.22, gain: 0.18, cutoff: 980 },
+              { beat: 1, note: "third", duration: 0.3, sustain: 0.2, gain: 0.16, cutoff: 1020 },
+              { beat: 2, note: "fifth", duration: 0.3, sustain: 0.2, gain: 0.16, cutoff: 1000 },
+              { beat: 3, note: "approach", direction: "up", duration: 0.24, sustain: 0.16, gain: 0.14, cutoff: 1100 }
+            ]
+          },
+          {
+            id: "approach_note",
+            label: "Approach Note",
+            tags: ["motion", "leading", "jazzy"],
+            energy: 0.5,
+            density: 0.45,
+            events: [
+              { beat: 0, note: "root", duration: 0.38, sustain: 0.22, gain: 0.18, cutoff: 920 },
+              { beat: 1, note: "fifth", duration: 0.22, sustain: 0.18, gain: 0.15, cutoff: 980 },
+              { beat: 2, note: "seventh", duration: 0.22, sustain: 0.18, gain: 0.15, cutoff: 980 },
+              { beat: 3, note: "approach", direction: "up", duration: 0.24, sustain: 0.16, gain: 0.14, cutoff: 1120 }
+            ]
+          },
+          {
+            id: "pedal_point",
+            label: "Pedal Point",
+            tags: ["space", "drone", "supportive"],
+            energy: 0.15,
+            density: 0.2,
+            events: [
+              { beat: 0, note: "root", duration: 1.2, sustain: 0.42, gain: 0.2, cutoff: 800 },
+              { beat: 2, note: "octave", duration: 0.34, sustain: 0.18, gain: 0.14, cutoff: 860 },
+              { beat: 3, note: "root", duration: 0.7, sustain: 0.28, gain: 0.18, cutoff: 820 }
+            ]
+          },
+          {
+            id: "octave_bounce",
+            label: "Octave Bounce",
+            tags: ["groove", "motion", "bright"],
+            energy: 0.45,
+            density: 0.4,
+            events: [
+              { beat: 0, note: "root", duration: 0.34, sustain: 0.2, gain: 0.18, cutoff: 920 },
+              { beat: 1, note: "octave", duration: 0.24, sustain: 0.18, gain: 0.15, cutoff: 980 },
+              { beat: 2, note: "fifth", duration: 0.24, sustain: 0.18, gain: 0.16, cutoff: 940 },
+              { beat: 3, note: "octave", duration: 0.22, sustain: 0.16, gain: 0.14, cutoff: 1000 }
+            ]
+          }
+        ],
+        backing: [
+          {
+            id: "pad_long",
+            label: "Pad Long",
+            tags: ["space", "supportive", "stable"],
+            energy: 0.15,
+            density: 0.2,
+            events: [
+              { beat: 0, shape: "pad", duration: 1.8, sustain: 0.28, gain: 0.14, cutoff: 2800 }
+            ]
+          },
+          {
+            id: "stab_short",
+            label: "Stab Short",
+            tags: ["rhythmic", "supportive", "groove"],
+            energy: 0.4,
+            density: 0.4,
+            events: [
+              { beat: 0, shape: "stab", duration: 0.34, sustain: 0.16, gain: 0.14, cutoff: 2500 },
+              { beat: 2, shape: "stab", duration: 0.3, sustain: 0.14, gain: 0.13, cutoff: 2500 }
+            ]
+          },
+          {
+            id: "shell_voicing",
+            label: "Shell Voicing",
+            tags: ["clean", "supportive", "stable"],
+            energy: 0.25,
+            density: 0.25,
+            events: [
+              { beat: 0, shape: "shell", duration: 1.15, sustain: 0.22, gain: 0.13, cutoff: 2300 },
+              { beat: 3, shape: "shell", duration: 0.7, sustain: 0.18, gain: 0.12, cutoff: 2300 }
+            ]
+          },
+          {
+            id: "open_voicing",
+            label: "Open Voicing",
+            tags: ["space", "color", "supportive"],
+            energy: 0.3,
+            density: 0.25,
+            events: [
+              { beat: 0, shape: "open", duration: 1.35, sustain: 0.2, gain: 0.12, cutoff: 2600 }
+            ]
+          },
+          {
+            id: "sync_comp",
+            label: "Sync Comp",
+            tags: ["rhythmic", "push", "motion"],
+            energy: 0.5,
+            density: 0.45,
+            events: [
+              { beat: 1, shape: "stab", duration: 0.3, sustain: 0.14, gain: 0.13, cutoff: 2400 },
+              { beat: 3, shape: "stab", duration: 0.3, sustain: 0.14, gain: 0.13, cutoff: 2400 }
+            ]
+          },
+          {
+            id: "cluster_color",
+            label: "Cluster Color",
+            tags: ["color", "motion", "jazzy"],
+            energy: 0.5,
+            density: 0.45,
+            events: [
+              { beat: 0, shape: "cluster", duration: 0.44, sustain: 0.16, gain: 0.13, cutoff: 2350 },
+              { beat: 2, shape: "cluster", duration: 0.36, sustain: 0.14, gain: 0.12, cutoff: 2350 }
+            ]
+          }
+        ]
+      };
+
+      function resetAIPatternState() {
+        aiPatternState = {
+          drums: { barIndex: -1, current: null, history: [] },
+          bass: { barIndex: -1, current: null, history: [] },
+          backing: { barIndex: -1, current: null, history: [] }
+        };
+      }
+
+      function roleHumanCount() {
+        return ROLE_ORDER.filter(function (r) { return state.roleAssignments[r] === "human"; }).length;
+      }
+
+      function chordFamily(chord) {
+        const q = (chord && chord.quality ? chord.quality : "").toLowerCase();
+        if (q.includes("dim") || q.includes("m7b5")) return "darker";
+        if (q.includes("m") && !q.includes("maj")) return "minor";
+        if (q.includes("sus")) return "open";
+        if (q.includes("maj7") || q.includes("9") || q.includes("13")) return "color";
+        if (q.includes("7")) return "dominant";
+        return "major";
+      }
+
+      function patternContext(role, chord, barIndex, progression) {
+        const progressionLength = Math.max(1, (progression && progression.length) || 1);
+        const phraseBar = barIndex % progressionLength;
+        const family = chordFamily(chord);
+        return {
+          role: role,
+          chord: chord,
+          barIndex: barIndex,
+          phraseBar: phraseBar,
+          progressionLength: progressionLength,
+          family: family,
+          humanCount: roleHumanCount(),
+          aiDensity: Math.max(0, 4 - roleHumanCount())
+        };
+      }
+
+      function pickPatternFromLibrary(role, context) {
+        const stateSlot = aiPatternState[role];
+        const library = AI_PATTERN_LIBRARY[role] || [];
+        if (!library.length) return null;
+        const recent = stateSlot.history || [];
+        const rotation = (context.barIndex + noteIndex(context.chord.root) + context.humanCount + role.length) % library.length;
+        let chosen = null;
+
+        for (let offset = 0; offset < library.length; offset++) {
+          const pattern = library[(rotation + offset) % library.length];
+          const tags = pattern.tags || [];
+          const repeating = recent[0] === pattern.id;
+          const familyMatch =
+            (context.family === "minor" && (tags.indexOf("minor") >= 0 || tags.indexOf("jazzy") >= 0 || tags.indexOf("color") >= 0)) ||
+            (context.family === "major" && (tags.indexOf("stable") >= 0 || tags.indexOf("supportive") >= 0 || tags.indexOf("groove") >= 0)) ||
+            (context.family === "dominant" && (tags.indexOf("jazzy") >= 0 || tags.indexOf("push") >= 0 || tags.indexOf("motion") >= 0)) ||
+            (context.family === "color" && tags.indexOf("color") >= 0) ||
+            (context.family === "darker" && (tags.indexOf("space") >= 0 || tags.indexOf("drone") >= 0 || tags.indexOf("supportive") >= 0));
+
+          if (repeating && library.length > 1) continue;
+          if (context.phraseBar === 0 && tags.indexOf("stable") === -1 && tags.indexOf("supportive") === -1 && tags.indexOf("simple") === -1) continue;
+          if (context.phraseBar === context.progressionLength - 1 && tags.indexOf("fill") === -1 && tags.indexOf("transition") === -1 && tags.indexOf("motion") === -1 && offset < 2) continue;
+          if (context.humanCount >= 3 && tags.indexOf("space") === -1 && tags.indexOf("supportive") === -1 && tags.indexOf("stable") === -1 && offset < 2) continue;
+          if (context.humanCount <= 1 && tags.indexOf("motion") === -1 && tags.indexOf("energy") === -1 && tags.indexOf("groove") === -1 && offset < 2) continue;
+          if (familyMatch || offset > 0) {
+            chosen = pattern;
+            break;
+          }
+        }
+
+        if (!chosen) chosen = library[rotation % library.length];
+        return chosen;
+      }
+
+      function getAIPattern(role, chord, barIndex, progression) {
+        const context = patternContext(role, chord, barIndex, progression);
+        const slot = aiPatternState[role];
+        if (!slot.current || slot.barIndex !== barIndex) {
+          const chosen = pickPatternFromLibrary(role, context);
+          const variation = (barIndex + noteIndex(chord.root) + role.length + context.humanCount) % 3;
+          slot.current = chosen ? {
+            id: chosen.id,
+            label: chosen.label,
+            tags: chosen.tags || [],
+            events: chosen.events || [],
+            variation: variation
+          } : null;
+          slot.barIndex = barIndex;
+          if (chosen) {
+            slot.history = [chosen.id].concat((slot.history || []).filter(function (id) { return id !== chosen.id; })).slice(0, 4);
+          }
+        }
+        return slot.current;
+      }
+
+      function resolveBassMidi(chord, noteName, variation, event) {
+        const tones = chordTones(chord.root, chord.quality);
+        const scale = scaleTones(chord.root, chord.quality, "scale");
+        const baseOctave = (event && typeof event.octave === "number") ? event.octave : 2;
+        const octave = baseOctave + ((variation === 2 && event && event.bumpOctave) ? 1 : 0);
+        const noteForApproach = function (direction) {
+          return noteToMidi(transposeNote(chord.root, direction === "down" ? -1 : 1), octave);
+        };
+
+        if (noteName === "root") return noteToMidi(tones[0], octave);
+        if (noteName === "third") return noteToMidi(tones[1] || tones[0], octave);
+        if (noteName === "fifth") return noteToMidi(tones[2] || tones[0], octave);
+        if (noteName === "seventh") return noteToMidi(tones[3] || tones[1] || tones[0], octave);
+        if (noteName === "octave") return noteToMidi(tones[0], octave + 1);
+        if (noteName === "scale2") return noteToMidi(scale[1] || tones[0], octave);
+        if (noteName === "scale4") return noteToMidi(scale[3] || tones[0], octave);
+        if (noteName === "scale6") return noteToMidi(scale[5] || tones[0], octave);
+        if (noteName === "approach") return noteForApproach((event && event.direction) || (variation === 2 ? "down" : "up"));
+        return noteToMidi(tones[0], octave);
+      }
+
+      function resolveBackingVoicing(chord, shape, variation) {
+        const tones = chordTones(chord.root, chord.quality);
+        const scale = scaleTones(chord.root, chord.quality, "scale");
+        const root = noteToMidi(tones[0], 4);
+        const third = noteToMidi(tones[1] || tones[0], 4);
+        const fifth = noteToMidi(tones[2] || tones[0], 4);
+        const seventh = noteToMidi(tones[3] || tones[1] || tones[0], 4);
+        const ninth = noteToMidi(scale[1] || tones[0], 4);
+        const sus4 = noteToMidi(scale[3] || tones[0], 4);
+        let voicing;
+
+        if (shape === "pad") voicing = [root, fifth, seventh].filter(Boolean);
+        else if (shape === "stab") voicing = [root, third, fifth];
+        else if (shape === "shell") voicing = [root, seventh || third];
+        else if (shape === "open") voicing = [root, fifth + 12, seventh || third + 12];
+        else if (shape === "cluster") voicing = [root, third, ninth, fifth].filter(Boolean);
+        else if (shape === "sus") voicing = [root, sus4, fifth];
+        else voicing = [root, third, fifth];
+
+        if (variation === 1 && voicing.length > 2) {
+          voicing = voicing.slice(0, voicing.length - 1).concat([voicing[voicing.length - 1] + 12]);
+        } else if (variation === 2 && voicing.length > 2) {
+          voicing = voicing.slice().reverse();
+        }
+
+        return voicing;
+      }
+
+      function playDrumPatternBeat(pattern, beatInBar) {
+        const vol = roleVolume("drums");
+        const events = (pattern && pattern.events || []).filter(function (event) {
+          return Number(event.beat) === beatInBar;
+        });
+
+        events.forEach(function (event) {
+          const gain = (event.gain || 1);
+          if (event.hit === "kick") playKick(gain, vol);
+          else if (event.hit === "snare") playSnare(gain, vol);
+          else if (event.hit === "hat") playHat(gain, vol);
+          else if (event.hit === "clap") playClap(gain, vol);
+        });
+
+        if (pattern && pattern.variation === 1 && beatInBar === 3) {
+          playHat(0.6, vol);
+        }
+      }
+
+      function playBassPatternBeat(pattern, chord, beatInBar, barIndex) {
+        const vol = roleVolume("bass");
+        const events = (pattern && pattern.events || []).filter(function (event) {
+          return Number(event.beat) === beatInBar;
+        });
+
+        events.forEach(function (event) {
+          const midi = resolveBassMidi(chord, event.note, pattern.variation, event);
+          const octaveBump = pattern.variation === 1 && beatInBar === 3 && event.note !== "root" ? 1 : 0;
+          const duration = event.duration || 0.38;
+          const cutoff = event.cutoff || 900;
+          playTone(midi + (octaveBump * 12), {
+            wave: event.wave || "square",
+            duration: duration,
+            sustain: event.sustain != null ? event.sustain : 0.24,
+            release: event.release != null ? event.release : 0.18,
+            gain: event.gain || 0.16,
+            volume: vol,
+            cutoff: cutoff,
+            q: event.q || 0.7
+          });
+        });
+
+        if (pattern && pattern.id === "root_hold" && beatInBar === 0 && pattern.variation === 2) {
+          playTone(resolveBassMidi(chord, "fifth", pattern.variation, { octave: 2 }), {
+            wave: "square",
+            duration: 0.18,
+            gain: 0.12,
+            volume: vol,
+            cutoff: 940,
+            q: 0.7
+          });
+        }
+      }
+
+      function playBackingPatternBeat(pattern, chord, beatInBar, barIndex) {
+        const vol = roleVolume("backing");
+        const events = (pattern && pattern.events || []).filter(function (event) {
+          return Number(event.beat) === beatInBar;
+        });
+
+        events.forEach(function (event) {
+          const gain = (event.gain || 0.13);
+          const duration = event.duration || 0.28;
+          const voicing = resolveBackingVoicing(chord, event.shape || "stab", pattern.variation);
+
+          playChord(voicing, {
+            duration: duration,
+            sustain: event.sustain != null ? event.sustain : 0.18,
+            release: event.release != null ? event.release : 0.2,
+            gain: gain,
+            volume: vol,
+            cutoff: event.cutoff || 2500
+          });
+        });
+
+        if (pattern && pattern.variation === 1 && beatInBar === 2 && events.length === 0) {
+          playChord(resolveBackingVoicing(chord, "shell", pattern.variation), {
+            duration: 0.28,
+            sustain: 0.14,
+            release: 0.14,
+            gain: 0.08,
+            volume: vol,
+            cutoff: 2300
+          });
+        }
+      }
+
+      function playBassLine(chord, beatInBar, barIndex, progression) {
+        const pattern = getAIPattern("bass", chord, barIndex, progression);
+        playBassPatternBeat(pattern, chord, beatInBar, barIndex);
+      }
+
+      function playBacking(chord, beatInBar, barIndex, progression) {
+        const pattern = getAIPattern("backing", chord, barIndex, progression);
+        playBackingPatternBeat(pattern, chord, beatInBar, barIndex);
+      }
+
+      function playLeadMotif(chord, beatInBar, barIndex) {
+        const tones = chordTones(chord.root, chord.quality);
+        const scale = scaleTones(chord.root, chord.quality, "scale");
+        const motif = [
+          noteToMidi(tones[0], 4),
+          noteToMidi(tones[1] || tones[0], 4),
+          noteToMidi(tones[2] || tones[0], 4),
+          noteToMidi(scale[(barIndex + beatInBar) % scale.length], 4)
+        ];
+        const vol = roleVolume("guitar");
+        if (beatInBar === 0) playTone(motif[0], { wave: "square", duration: 0.18, gain: 0.18, volume: vol, cutoff: 3200, q: 0.8 });
+        if (beatInBar === 1) playTone(motif[1], { wave: "triangle", duration: 0.16, gain: 0.16, volume: vol, cutoff: 2800, q: 0.8 });
+        if (beatInBar === 2) playTone(motif[2], { wave: "square", duration: 0.16, gain: 0.16, volume: vol, cutoff: 3000, q: 0.8 });
+        if (beatInBar === 3) playTone(motif[3], { wave: "triangle", duration: 0.22, gain: 0.16, volume: vol, cutoff: 2600, q: 0.8 });
+      }
+
+      function roleMode(role) {
+        return state.roleAssignments[role] === "human" ? "human" : "ai";
+      }
+
+      function normalizeSelectedRole() {
+        if (ROLE_ORDER.indexOf(state.selectedRole) === -1) {
+          state.selectedRole = "guitar";
+        }
+      }
+
+      function reconcileRoleAssignments() {
+        normalizeSelectedRole();
+        const count = Math.max(1, Math.min(ROLE_ORDER.length, Number(state.roleCount || 1)));
+        const orderedRoles = [state.selectedRole].concat(ROLE_ORDER.filter(function (role) {
+          return role !== state.selectedRole;
+        }));
+        const humanRoles = orderedRoles.slice(0, count);
+        ROLE_ORDER.forEach(function (role) {
+          state.roleAssignments[role] = humanRoles.indexOf(role) >= 0 ? "human" : "ai";
+        });
+        state.roleCount = count;
+      }
+
+      function selectRole(role) {
+        if (ROLE_ORDER.indexOf(role) === -1) return;
+        state.selectedRole = role;
+        reconcileRoleAssignments();
+        renderRoles();
+        renderSession();
+        saveState();
+      }
+
+      function assignRoleCount(count) {
+        state.roleCount = count;
+        reconcileRoleAssignments();
+        renderRoles();
+        renderSession();
+        saveState();
+      }
+
+      function makeSolo(role) {
+        if (ROLE_ORDER.indexOf(role) === -1) return;
+        state.selectedRole = role;
+        state.roleCount = 1;
+        reconcileRoleAssignments();
+        el.roleCountSelect.value = "1";
+        renderRoles();
+        renderSession();
+        saveState();
+      }
+
+      function renderRoles() {
+        el.roleGrid.innerHTML = "";
+        const humanCount = ROLE_ORDER.filter(function (r) { return state.roleAssignments[r] === "human"; }).length;
+        const aiCount = 4 - humanCount;
+        el.seatSummary.textContent = humanCount + " human / " + aiCount + " AI";
+
+        ROLE_ORDER.forEach(function (role) {
+          const meta = ROLE_META[role];
+          const mode = state.roleAssignments[role];
+          const selected = state.selectedRole === role;
+          const card = document.createElement("div");
+          card.className = "role " + (mode === "human" ? "active-human" : "active-ai") + (selected ? " selected" : "");
+          card.innerHTML = [
+            '<div class="role-head">',
+            '<div class="role-name" style="color:' + meta.color + '">' + meta.name + '</div>',
+            '<div class="role-badge">' + (selected ? "You" : (mode === "human" ? "Human" : "AI")) + '</div>',
+            '</div>',
+            '<div class="role-desc">' + meta.description + '</div>',
+            '<div class="role-desc"><strong>Style:</strong> ' + meta.style + '</div>',
+            '<div class="role-volume">',
+            '<div class="row"><span>Volume</span><span>' + Math.round(roleVolume(role) * 100) + '%</span></div>',
+            '<input type="range" min="0" max="1.25" step="0.01" value="' + roleVolume(role) + '" data-volume="' + role + '" />',
+            '</div>',
+            '<div class="role-actions">',
+            '<button class="tiny primary" data-sit="' + role + '">Sit here</button>',
+            '<button class="tiny" data-solo="' + role + '">Solo this seat</button>',
+            '</div>'
+          ].join("");
+          el.roleGrid.appendChild(card);
+        });
+
+        el.roleGrid.querySelectorAll("[data-sit]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            selectRole(button.getAttribute("data-sit"));
+          });
+        });
+
+        el.roleGrid.querySelectorAll("[data-solo]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            makeSolo(button.getAttribute("data-solo"));
+          });
+        });
+
+        el.roleGrid.querySelectorAll("[data-volume]").forEach(function (slider) {
+          slider.addEventListener("input", function () {
+            const role = slider.getAttribute("data-volume");
+            setRoleVolume(role, slider.value);
+            const row = slider.previousElementSibling;
+            if (row) {
+              const valueLabel = row.querySelector("span:last-child");
+              if (valueLabel) valueLabel.textContent = Math.round(roleVolume(role) * 100) + "%";
+            }
+          });
+        });
+      }
+
+      function renderPresetOptions() {
+        el.presetSelect.innerHTML = ['<option value="custom">Custom progression</option>'].concat(PRESETS.map(function (preset) {
+          return '<option value="' + preset.id + '">' + preset.name + '</option>';
+        })).join("");
+      }
+
+      function applyPreset(id, sync) {
+        const preset = PRESETS.find(function (item) { return item.id === id; });
+        if (!preset) return;
+        state.progressionId = preset.id;
+        state.progressionText = preset.chords;
+        state.progressionSourceKey = preset.key;
+        state.key = preset.key;
+        el.presetSelect.value = preset.id;
+        el.progressionInput.value = preset.chords;
+        el.keySelect.value = preset.key;
+        saveState();
+        if (sync) renderSession();
+      }
+
+      function renderKeyOptions() {
+        const keys = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+        el.keySelect.innerHTML = keys.map(function (key) {
+          return '<option value="' + key + '">' + key + '</option>';
+        }).join("");
+      }
+
+      function buildFretboard(container, config) {
+        if (!container) return null;
+        const strings = (config && config.strings) || GUITAR_STRINGS;
+        const labels = (config && config.labels) || ["E", "B", "G", "D", "A", "E"];
+        container.innerHTML = "";
+        const board = document.createElement("div");
+        board.className = "fretboard";
+        container.appendChild(board);
+        board.appendChild(document.createElement("div")).className = "head-cell";
+        for (let fret = 0; fret <= 22; fret++) {
+          const head = document.createElement("div");
+          head.className = "head-cell";
+          head.textContent = fret;
+          board.appendChild(head);
+        }
+
+        const inlays = { 3: true, 5: true, 7: true, 9: true, 12: true, 15: true, 17: true, 19: true, 21: true };
+
+        strings.forEach(function (openMidi, stringIndex) {
+          const label = document.createElement("div");
+          label.className = "string-label";
+          label.textContent = labels[stringIndex] || "";
+          board.appendChild(label);
+
+          for (let fret = 0; fret <= 22; fret++) {
+            const midi = openMidi + fret;
+            const note = CHROMATIC[midi % 12];
+            const cell = document.createElement("div");
+            cell.className = "cell";
+            cell.dataset.note = note;
+            cell.dataset.midi = String(midi);
+            cell.dataset.fret = String(fret);
+            cell.dataset.stringIndex = String(stringIndex);
+            cell.setAttribute("role", "button");
+            cell.setAttribute("tabindex", "0");
+            if (inlays[fret]) {
+              const dot = document.createElement("span");
+              dot.textContent = fret === 12 ? "*" : ".";
+              dot.style.opacity = fret === 12 ? "0.7" : "0.45";
+              cell.appendChild(dot);
+            }
+            const roleName = config && config.role ? config.role : "guitar";
+            const startCellVoice = function (event) {
+              if (event.type === "pointerdown" && event.button !== 0) return;
+              if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              if (event.type === "pointerdown" && cell.setPointerCapture) {
+                try { cell.setPointerCapture(event.pointerId); } catch {}
+              }
+              stopActiveFretboardVoices();
+              cell._heldVoice = startHeldVoice(midi, {
+                wave: "square",
+                gain: 0.16,
+                volume: roleVolume(roleName),
+                cutoff: 3200,
+                q: 0.8
+              });
+              if (cell._heldVoice) activeFretboardVoices.add(cell._heldVoice);
+              flashCell(cell);
+              el.turnLine.textContent = "Playing " + note + " on fret " + fret + ".";
+            };
+            const stopCellVoice = function (event) {
+              if (event && event.type === "keyup" && event.key !== "Enter" && event.key !== " ") return;
+              stopActiveFretboardVoices();
+              stopHeldVoice(cell);
+              el.turnLine.textContent = "Stopped " + note + " on fret " + fret + ".";
+            };
+            cell.addEventListener("pointerdown", startCellVoice);
+            cell.addEventListener("pointerup", stopCellVoice);
+            cell.addEventListener("pointercancel", stopCellVoice);
+            cell.addEventListener("lostpointercapture", stopCellVoice);
+            cell.addEventListener("pointerleave", function (event) {
+              if (event.buttons === 0) stopCellVoice(event);
+            });
+            cell.addEventListener("keydown", startCellVoice);
+            cell.addEventListener("keyup", stopCellVoice);
+            board.appendChild(cell);
+          }
+        });
+
+        el.fretboard = board;
+        return board;
+      }
+
+      function flashCell(cell) {
+        cell.classList.add("active-hit");
+        window.clearTimeout(cell._flashTimer);
+        cell._flashTimer = window.setTimeout(function () {
+          cell.classList.remove("active-hit");
+        }, 180);
+      }
+
+      function renderSession() {
+        const sourceKey = state.progressionSourceKey || state.key || "C";
+        const semitone = noteIndex(state.key) - noteIndex(sourceKey);
+        const baseProgression = parseProgression(state.progressionText);
+        const transposed = baseProgression.map(function (chord) {
+          return {
+            root: transposeNote(chord.root, semitone),
+            quality: chord.quality
+          };
+        });
+
+        const progression = transposed.length ? transposed : [{ root: "C", quality: "maj" }];
+        const beatMs = 60000 / Number(state.tempo);
+        const barMs = beatMs * 4;
+        const elapsed = state.isRunning && sessionStart ? (Date.now() - sessionStart) : (state.isPaused ? state.elapsedMs : 0);
+        const beatIndex = Math.floor(elapsed / beatMs);
+        const barIndex = Math.floor(elapsed / barMs);
+        const beatInBar = beatIndex % 4;
+        const chord = progression[barIndex % progression.length];
+        const nextChord = progression[(barIndex + 1) % progression.length];
+
+        const currentLabel = chordLabel(chord);
+        const nextLabel = chordLabel(nextChord);
+
+        el.currentChord.textContent = currentLabel;
+        el.nextChord.textContent = "Next: " + nextLabel;
+        el.beatText.textContent = "Bar " + ((barIndex % progression.length) + 1) + " / " + progression.length + " | Beat " + (beatInBar + 1) + " / 4";
+
+        const humanCount = ROLE_ORDER.filter(function (r) { return state.roleAssignments[r] === "human"; }).length;
+        const aiCount = 4 - humanCount;
+        el.seatSummary.textContent = humanCount + " human / " + aiCount + " AI";
+
+        const humanRoles = ROLE_ORDER.filter(function (r) { return state.roleAssignments[r] === "human"; });
+        if (humanRoles.length === 0) {
+          el.turnLine.textContent = "No human seats selected. The room is fully automated.";
+        } else {
+          el.turnLine.textContent = humanRoles.map(function (role) { return ROLE_META[role].name; }).join(", ") + " are human-controlled; the rest are AI-filled.";
+        }
+
+        const aiSummary = ROLE_ORDER.filter(function (role) {
+          return state.roleAssignments[role] === "ai";
+        }).map(function (role) {
+          const pattern = aiPatternState[role] && aiPatternState[role].current;
+          return ROLE_META[role].name + ": " + (pattern ? pattern.label : "pending");
+        }).join(" · ");
+        if (el.patternLine) {
+          el.patternLine.textContent = "AI patterns: " + (aiSummary || "none");
+        }
+
+        const activeChips = progression.map(function (item, index) {
+          const label = chordLabel(item);
+          return '<span class="chip' + (index === barIndex % progression.length ? ' active' : '') + '">' + label + '</span>';
+        }).join("");
+        el.barChips.innerHTML = activeChips;
+
+        const layerKey = ["root", "chord", "scale", "avoid", "approach"].map(function (layer) {
+          return layerEnabled(layer) ? "1" : "0";
+        }).join("");
+        const seatRenderKey = state.selectedRole + "|" + currentLabel + "|" + currentLabel.length + "|" + layerKey;
+        if (seatRenderKey !== lastSeatRenderKey) {
+          lastSeatRenderKey = seatRenderKey;
+          renderSeatInterface(chord);
+        } else if (state.selectedRole === "guitar") {
+          renderFretboardForChord(chord);
+        }
+
+        if (state.isRunning) {
+          const beatChanged = beatIndex !== lastBeatIndex;
+          if (beatChanged) {
+            lastBeatIndex = beatIndex;
+            triggerBeat(chord, beatInBar, barIndex, progression);
+          }
+          if (!state.loop && barIndex >= progression.length - 1 && beatInBar === 3) {
+            stopSession(true);
+          }
+        }
+      }
+
+      function renderFretboardForChord(chord) {
+        if (!el.fretboard) return;
+        const chordTonesList = chordTones(chord.root, chord.quality);
+        const scaleList = scaleTones(chord.root, chord.quality, "scale");
+        const avoidList = avoidTones(chord);
+        const approachList = approachTones(chordTonesList);
+        const root = chord.root;
+
+        el.fretboard.querySelectorAll(".cell").forEach(function (cell) {
+          cell.innerHTML = "";
+          const note = cell.dataset.note;
+          const dot = document.createElement("div");
+          dot.className = "dot muted";
+          dot.textContent = note;
+
+          if (note === root && layerEnabled("root")) dot.className = "dot root";
+          else if (chordTonesList.indexOf(note) >= 0 && layerEnabled("chord")) dot.className = "dot chord";
+          else if (avoidList.indexOf(note) >= 0 && layerEnabled("avoid")) dot.className = "dot avoid";
+          else if (scaleList.indexOf(note) >= 0 && layerEnabled("scale")) dot.className = "dot scale";
+          else if (approachList.indexOf(note) >= 0 && layerEnabled("approach")) dot.className = "dot approach";
+          else dot.className = "dot muted";
+
+          cell.appendChild(dot);
+        });
+      }
+
+      function flashSeatKey(button) {
+        button.classList.add("active");
+        window.clearTimeout(button._flashTimer);
+        button._flashTimer = window.setTimeout(function () {
+          button.classList.remove("active");
+        }, 140);
+      }
+
+      function triggerDrumHit(kind) {
+        const vol = roleVolume("drums");
+        if (kind === "kick") playKick(1.1, vol);
+        else if (kind === "snare") playSnare(0.55, vol);
+        else if (kind === "hat") playHat(0.18, vol);
+        else playClap(0.28, vol);
+      }
+
+      function renderSeatInterface(chord) {
+        if (!el.seatInterface) return;
+        normalizeSelectedRole();
+        stopActiveBackingHold();
+        el.seatInterface.innerHTML = "";
+
+        const role = state.selectedRole;
+        const meta = ROLE_META[role];
+        const shell = document.createElement("div");
+        shell.className = "seat-shell";
+
+        if (role === "guitar") {
+          shell.innerHTML = [
+            '<div class="seat-header">',
+            '<div>',
+            '<div class="seat-title">Guitar seat</div>',
+            '<div class="seat-help">The whole neck is clickable. Hear ' + chordLabel(chord) + ' and shape a line without leaving the seat.</div>',
+            '</div>',
+            '<div class="role-badge" style="border-color:' + meta.color + '; color:' + meta.color + ';">Lead focus</div>',
+            '</div>',
+            '<div class="display-row">',
+            '<button class="layer-toggle ' + (layerEnabled("root") ? "active" : "") + '" data-layer="root">Root</button>',
+            '<button class="layer-toggle ' + (layerEnabled("chord") ? "active" : "") + '" data-layer="chord">Chord tone</button>',
+            '<button class="layer-toggle ' + (layerEnabled("scale") ? "active" : "") + '" data-layer="scale">Scale</button>',
+            '<button class="layer-toggle ' + (layerEnabled("avoid") ? "active" : "") + '" data-layer="avoid">Avoid</button>',
+            '<button class="layer-toggle ' + (layerEnabled("approach") ? "active" : "") + '" data-layer="approach">Approach</button>',
+            '</div>',
+            '<div class="legend">',
+            '<span><i class="swatch root"></i> Root</span>',
+            '<span><i class="swatch chord"></i> Chord tone</span>',
+            '<span><i class="swatch scale"></i> Scale</span>',
+            '<span><i class="swatch avoid"></i> Avoid</span>',
+            '<span><i class="swatch approach"></i> Approach</span>',
+            '</div>'
+          ].join("");
+          const wrap = document.createElement("div");
+          wrap.className = "fretboard-wrap";
+          shell.appendChild(wrap);
+          el.seatInterface.appendChild(shell);
+          buildFretboard(wrap, { role: "guitar" });
+          renderFretboardForChord(chord);
+          shell.querySelectorAll("[data-layer]").forEach(function (button) {
+            button.addEventListener("click", function () {
+              toggleLayer(button.getAttribute("data-layer"));
+            });
+          });
+          return;
+        }
+
+        if (role === "drums") {
+          shell.innerHTML = [
+            '<div class="seat-header">',
+            '<div>',
+            '<div class="seat-title">Drum seat</div>',
+            '<div class="seat-help">Use the keyboard or tap pads. A = kick, S = snare, D = hat, F = clap.</div>',
+            '</div>',
+            '<div class="role-badge" style="border-color:' + meta.color + '; color:' + meta.color + ';">Keyboard</div>',
+            '</div>',
+            '<div class="seat-kbd-grid" id="drumPadGrid"></div>'
+          ].join("");
+          el.seatInterface.appendChild(shell);
+          const grid = shell.querySelector("#drumPadGrid");
+          const pads = [
+            { key: "A", label: "Kick", desc: "Low pulse", kind: "kick" },
+            { key: "S", label: "Snare", desc: "Backbeat", kind: "snare" },
+            { key: "D", label: "Hat", desc: "Time keeper", kind: "hat" },
+            { key: "F", label: "Clap", desc: "Bright accent", kind: "clap" }
+          ];
+          pads.forEach(function (pad) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "seat-key";
+            button.dataset.drumKey = pad.key.toLowerCase();
+            button.dataset.kind = pad.kind;
+            button.innerHTML = '<div class="key">' + pad.key + '</div><div>' + pad.label + '</div><div class="desc">' + pad.desc + '</div>';
+            button.addEventListener("click", function () {
+              triggerDrumHit(pad.kind);
+              flashSeatKey(button);
+            });
+            grid.appendChild(button);
+          });
+          return;
+        }
+
+        if (role === "bass") {
+          shell.innerHTML = [
+            '<div class="seat-header">',
+            '<div>',
+            '<div class="seat-title">Bass seat</div>',
+            '<div class="seat-help">Four-string bass board. Click or tap any fret to play a line under ' + chordLabel(chord) + '.</div>',
+            '</div>',
+            '<div class="role-badge" style="border-color:' + meta.color + '; color:' + meta.color + ';">Free play</div>',
+            '</div>',
+            '<div class="display-row">',
+            '<button class="layer-toggle ' + (layerEnabled("root") ? "active" : "") + '" data-layer="root">Root</button>',
+            '<button class="layer-toggle ' + (layerEnabled("chord") ? "active" : "") + '" data-layer="chord">Chord tone</button>',
+            '<button class="layer-toggle ' + (layerEnabled("scale") ? "active" : "") + '" data-layer="scale">Scale</button>',
+            '<button class="layer-toggle ' + (layerEnabled("avoid") ? "active" : "") + '" data-layer="avoid">Avoid</button>',
+            '<button class="layer-toggle ' + (layerEnabled("approach") ? "active" : "") + '" data-layer="approach">Approach</button>',
+            '</div>',
+            '<div class="fretboard-wrap" id="bassWrap"></div>',
+            '<div class="legend">',
+            '<span><i class="swatch root"></i> Root</span>',
+            '<span><i class="swatch chord"></i> Chord tone</span>',
+            '<span><i class="swatch scale"></i> Scale</span>',
+            '<span><i class="swatch avoid"></i> Avoid</span>',
+            '<span><i class="swatch approach"></i> Approach</span>',
+            '</div>'
+          ].join("");
+          el.seatInterface.appendChild(shell);
+          const wrap = shell.querySelector("#bassWrap");
+          buildFretboard(wrap, { role: "bass", strings: BASS_STRINGS, labels: ["G", "D", "A", "E"] });
+          renderFretboardForChord(chord);
+          shell.querySelectorAll("[data-layer]").forEach(function (button) {
+            button.addEventListener("click", function () {
+              toggleLayer(button.getAttribute("data-layer"));
+            });
+          });
+          return;
+        }
+
+        const backingChoices = [
+          { label: "Stab", desc: "Short block chord", kind: "stab" },
+          { label: "Open", desc: "Wide voicing", kind: "open" },
+          { label: "Sus", desc: "Suspended color", kind: "sus" },
+          { label: "Push", desc: "Bright accent", kind: "push" },
+          { label: "Pad", desc: "Soft wash", kind: "pad" },
+          { label: "Shell", desc: "Root and 7th", kind: "shell" },
+          { label: "Cluster", desc: "Small close voicing", kind: "cluster" }
+        ];
+        shell.innerHTML = [
+          '<div class="seat-header">',
+          '<div>',
+          '<div class="seat-title">Backing seat</div>',
+          '<div class="seat-help">Click a voicing to support the room. The backing part stays compact and chiptune-friendly.</div>',
+          '</div>',
+          '<div class="role-badge" style="border-color:' + meta.color + '; color:' + meta.color + ';">Comping</div>',
+          '</div>',
+          '<div class="backing-grid" id="backingGrid"></div>'
+        ].join("");
+        el.seatInterface.appendChild(shell);
+        const backingGrid = shell.querySelector("#backingGrid");
+        backingChoices.forEach(function (item, index) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "backing-card";
+          button.innerHTML = "<strong>" + item.label + "</strong>" + item.desc + "<div style='font-size:12px;color:var(--muted);margin-top:4px;'>Hold to comp this chord</div>";
+          const startBackingHold = function () {
+            const tones = chordTones(chord.root, chord.quality);
+            const scale = scaleTones(chord.root, chord.quality, "scale");
+            const root = noteToMidi(tones[0], 4);
+            const third = noteToMidi(tones[1] || tones[0], 4);
+            const fifth = noteToMidi(tones[2] || tones[0], 4);
+            const seventh = noteToMidi(tones[3] || tones[1] || tones[0], 4);
+            const sus4 = noteToMidi(scale[3] || tones[0], 4);
+            const nine = noteToMidi(scale[1] || tones[0], 4);
+            let voicing = [root, third, fifth];
+            const gain = (0.1 + index * 0.01) * roleVolume("backing");
+
+            if (item.kind === "open") voicing = [root, fifth + 12, seventh || third + 12];
+            if (item.kind === "sus") voicing = [root, sus4, fifth];
+            if (item.kind === "push") voicing = [root, fifth, third + 12];
+            if (item.kind === "pad") voicing = [root, fifth, seventh].filter(Boolean);
+            if (item.kind === "shell") voicing = [root, seventh || third];
+            if (item.kind === "cluster") voicing = [root, third, nine, fifth].filter(Boolean);
+            if (item.kind === "stab") voicing = [root, third, fifth];
+
+            button._backingHolding = true;
+            button._backingTimeouts = [];
+            button._backingVoices = [];
+            let stopped = false;
+            const controller = {
+              stop: function () {
+                if (stopped) return;
+                stopped = true;
+                button._backingHolding = false;
+                if (button._backingTimeouts) {
+                  button._backingTimeouts.forEach(function (timer) { window.clearTimeout(timer); });
+                }
+                button._backingTimeouts = [];
+                stopHeldVoices(button._backingVoices);
+                button._backingVoices = [];
+                activeBackingHolds.delete(controller);
+              }
+            };
+            activeBackingHolds.add(controller);
+
+            const startVoice = function (midi, delay) {
+              const timer = window.setTimeout(function () {
+                if (!button._backingHolding) return;
+                const voice = startHeldVoice(midi, {
+                  wave: "square",
+                  gain: gain,
+                  cutoff: 2600,
+                  q: 0.9
+                });
+                if (voice) button._backingVoices.push(voice);
+              }, delay);
+              button._backingTimeouts.push(timer);
+            };
+
+            voicing.forEach(function (midi) {
+              const voice = startHeldVoice(midi, {
+                wave: "square",
+                gain: gain,
+                cutoff: 2400,
+                q: 0.9
+              });
+              if (voice) button._backingVoices.push(voice);
+            });
+            flashSeatKey(button);
+          };
+          const stopBackingHold = function () {
+            stopActiveBackingHold();
+          };
+          button.addEventListener("pointerdown", function (event) {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            if (button.setPointerCapture) {
+              try { button.setPointerCapture(event.pointerId); } catch {}
+            }
+            stopBackingHold();
+            startBackingHold();
+            el.turnLine.textContent = "Backing " + item.label + " is holding " + chordLabel(chord) + ".";
+          });
+          button.addEventListener("pointerup", function () {
+            stopBackingHold();
+            el.turnLine.textContent = "Backing " + item.label + " stopped.";
+          });
+          button.addEventListener("pointercancel", function () {
+            stopBackingHold();
+            el.turnLine.textContent = "Backing " + item.label + " stopped.";
+          });
+          button.addEventListener("lostpointercapture", function () {
+            stopBackingHold();
+            el.turnLine.textContent = "Backing " + item.label + " stopped.";
+          });
+          button.addEventListener("pointerleave", function (event) {
+            if (event.buttons === 0) {
+              stopBackingHold();
+              el.turnLine.textContent = "Backing " + item.label + " stopped.";
+            }
+          });
+          button.addEventListener("keydown", function (event) {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            stopBackingHold();
+            startBackingHold();
+            el.turnLine.textContent = "Backing " + item.label + " is holding " + chordLabel(chord) + ".";
+          });
+          button.addEventListener("keyup", function (event) {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            stopBackingHold();
+            el.turnLine.textContent = "Backing " + item.label + " stopped.";
+          });
+          button.addEventListener("blur", stopBackingHold);
+          backingGrid.appendChild(button);
+        });
+      }
+
+      function triggerBeat(chord, beatInBar, barIndex, progression) {
+        if (state.roleAssignments.drums === "ai") {
+          const drumPattern = getAIPattern("drums", chord, barIndex, progression);
+          playDrumPatternBeat(drumPattern, beatInBar, barIndex);
+        }
+
+        if (state.roleAssignments.bass === "ai") {
+          playBassLine(chord, beatInBar, barIndex, progression);
+        }
+
+        if (state.roleAssignments.backing === "ai") {
+          playBacking(chord, beatInBar, barIndex, progression);
+        }
+
+        if (state.roleAssignments.guitar === "ai") {
+          playLeadMotif(chord, beatInBar, barIndex);
+        }
+      }
+
+      function updateTimers() {
+        el.statusText.textContent = state.isRunning ? (state.isPaused ? "Paused" : "Session running") : "Ready to jam";
+      }
+
+      function formatTime(totalSeconds) {
+        const total = Math.max(0, Math.floor(totalSeconds));
+        const hours = String(Math.floor(total / 3600)).padStart(2, "0");
+        const minutes = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
+        const seconds = String(total % 60).padStart(2, "0");
+        return hours + ":" + minutes + ":" + seconds;
+      }
+
+      function startSession() {
+        if (state.isRunning && !state.isPaused) return;
+        const ctx = ensureAudio();
+        if (ctx && ctx.state === "suspended") ctx.resume();
+        if (state.isPaused) {
+          state.isPaused = false;
+          sessionStart = Date.now() - (state.elapsedMs || 0);
+        } else {
+          sessionStart = Date.now();
+          state.elapsedMs = 0;
+          lastBeatIndex = -1;
+          resetAIPatternState();
+        }
+        state.isRunning = true;
+        saveState();
+        updateTimers();
+        renderSession();
+        clearInterval(playbackTimer);
+        playbackTimer = setInterval(renderSession, 50);
+        clearInterval(metricsTimer);
+        metricsTimer = setInterval(updateTimers, 250);
+      }
+
+      function pauseSession() {
+        if (!state.isRunning || state.isPaused) return;
+        state.isPaused = true;
+        state.elapsedMs = Date.now() - sessionStart;
+        clearInterval(playbackTimer);
+        clearInterval(metricsTimer);
+        sessionStart = null;
+        saveState();
+        updateTimers();
+        renderSession();
+      }
+
+      function stopSession(commit) {
+        clearInterval(playbackTimer);
+        clearInterval(metricsTimer);
+        playbackTimer = null;
+        metricsTimer = null;
+        let delta = 0;
+        if (state.isRunning && sessionStart) {
+          delta = Date.now() - sessionStart;
+        } else if (state.isPaused) {
+          delta = state.elapsedMs || 0;
+        }
+        if (commit !== false) {
+          const seconds = Math.floor(delta / 1000);
+          state.totalSeconds += seconds;
+          state.todaySeconds += seconds;
+        }
+        state.isRunning = false;
+        state.isPaused = false;
+        state.elapsedMs = 0;
+        sessionStart = null;
+        lastBeatIndex = -1;
+        resetAIPatternState();
+        saveState();
+        updateTimers();
+        renderSession();
+      }
+
+      function syncRoleCountSelect() {
+        const humanCount = ROLE_ORDER.filter(function (r) { return state.roleAssignments[r] === "human"; }).length;
+        el.roleCountSelect.value = String(humanCount);
+      }
+
+      function init() {
+        renderPresetOptions();
+        renderKeyOptions();
+
+        el.presetSelect.value = state.progressionId;
+        el.progressionInput.value = state.progressionText;
+        el.keySelect.value = state.key;
+        el.tempoSelect.value = String(state.tempo);
+        el.roleCountSelect.value = String(state.roleCount || 1);
+        el.loopToggle.checked = state.loop;
+
+        reconcileRoleAssignments();
+        renderRoles();
+        updateTimers();
+        renderSession();
+
+        el.presetSelect.addEventListener("change", function () {
+          applyPreset(el.presetSelect.value, true);
+        });
+
+        el.progressionInput.addEventListener("input", function () {
+          state.progressionId = "custom";
+          el.presetSelect.value = "custom";
+          state.progressionText = el.progressionInput.value;
+          if (!state.progressionSourceKey) state.progressionSourceKey = state.key;
+          saveState();
+          renderSession();
+        });
+
+        el.keySelect.addEventListener("change", function () {
+          state.key = el.keySelect.value;
+          saveState();
+          renderSession();
+        });
+
+        el.tempoSelect.addEventListener("change", function () {
+          state.tempo = Number(el.tempoSelect.value);
+          saveState();
+          renderSession();
+        });
+
+        el.roleCountSelect.addEventListener("change", function () {
+          assignRoleCount(Number(el.roleCountSelect.value));
+        });
+
+        el.loopToggle.addEventListener("change", function () {
+          state.loop = el.loopToggle.checked;
+          saveState();
+        });
+
+        window.addEventListener("pointerup", stopActiveBackingHold, true);
+        window.addEventListener("pointercancel", stopActiveBackingHold, true);
+        window.addEventListener("blur", stopActiveBackingHold);
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden) {
+            stopActiveBackingHold();
+            stopActiveFretboardVoices();
+          }
+        });
+
+        el.startBtn.addEventListener("click", function () { startSession(); });
+        el.pauseBtn.addEventListener("click", function () { pauseSession(); });
+        el.stopBtn.addEventListener("click", function () { stopSession(true); });
+        el.resetBtn.addEventListener("click", function () {
+          if (!confirm("Reset this session room?")) return;
+          localStorage.removeItem(STORAGE_KEY);
+          location.reload();
+        });
+
+        window.addEventListener("keydown", function (event) {
+          if (event.repeat) return;
+          if (state.selectedRole !== "drums") return;
+          const key = event.key.toLowerCase();
+          const pad = document.querySelector('[data-drum-key="' + key + '"]');
+          if (!pad) return;
+          event.preventDefault();
+          triggerDrumHit(pad.getAttribute("data-kind"));
+          flashSeatKey(pad);
+        });
+
+        window.addEventListener("beforeunload", function () {
+          if (state.isRunning && sessionStart) {
+            const delta = Date.now() - sessionStart;
+            state.totalSeconds += Math.floor(delta / 1000);
+            state.todaySeconds += Math.floor(delta / 1000);
+            saveState();
+          }
+        });
+      }
+
+      function applyPresetDefaults() {
+        const presetId = state.progressionId || "warm-pat";
+        const preset = PRESETS.find(function (item) { return item.id === presetId; });
+        if (!preset) return;
+        if (state.progressionId !== "custom") {
+          state.progressionId = preset.id;
+          state.progressionText = preset.chords;
+          state.progressionSourceKey = preset.key;
+          if (!state.key) state.key = preset.key;
+        } else if (!state.progressionSourceKey) {
+          state.progressionSourceKey = state.key || preset.key;
+        }
+      }
+
+      if (!state.roleAssignments) {
+        state.roleAssignments = {
+          guitar: "human",
+          bass: "ai",
+          drums: "ai",
+          backing: "ai"
+        };
+      }
+
+      normalizeSelectedRole();
+
+      applyPresetDefaults();
+      if (!state.roleCount) {
+        state.roleCount = ROLE_ORDER.filter(function (r) { return state.roleAssignments[r] === "human"; }).length;
+      }
+      if (!state.progressionId) state.progressionId = "warm-pat";
+      if (!state.progressionText) state.progressionText = PRESETS[0].chords;
+      if (!state.key) state.key = "D";
+      if (!state.tempo) state.tempo = 116;
+      if (typeof state.loop !== "boolean") state.loop = true;
+      if (state.isRunning && !state.isPaused) {
+        state.isRunning = false;
+        state.elapsedMs = 0;
+      }
+      if (!state.displayLayers) state.displayLayers = { root: true, chord: true, scale: true, avoid: true, approach: true };
+      if (typeof state.displayLayers.approach !== "boolean") state.displayLayers.approach = true;
+      if (typeof state.displayLayers.avoid !== "boolean") state.displayLayers.avoid = true;
+      if (!state.volumes) state.volumes = { guitar: 0.9, bass: 0.85, drums: 0.75, backing: 0.8 };
+
+      renderRoles();
+      syncRoleCountSelect();
+      init();
+      saveState();
+    })();
+  </script>
+</body>
+</html>
+
